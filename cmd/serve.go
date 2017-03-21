@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
 
 	log "github.com/Sirupsen/logrus"
@@ -45,7 +46,7 @@ var serveCmd = &cobra.Command{
 		}
 		log.Debugf("parsed host: %s %s", url.Host, err)
 
-		rp := proxy.NewStripeScopedProxy(url)
+		rp := httputil.NewSingleHostReverseProxy(url)
 		proxy := proxy.NewStripePermissionsProxy(stripeKey, rp)
 		log.Infof("serve called with Stripe key: %s on %s", stripeKey, listenAddr)
 		http.ListenAndServe(listenAddr, proxy)

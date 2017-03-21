@@ -17,8 +17,6 @@ package proxy
 import (
 	"errors"
 	"net/http"
-	"net/http/httputil"
-	"net/url"
 	"strings"
 
 	"github.com/gorilla/mux"
@@ -46,22 +44,6 @@ var resourceRoutes = []struct {
 var accessMethods = map[Access][]string{
 	Read:  []string{"GET", "HEAD"},
 	Write: []string{"POST", "DELETE", "PUT", "PATCH"},
-}
-
-func singleJoiningSlash(a, b string) string {
-	aslash := strings.HasSuffix(a, "/")
-	bslash := strings.HasPrefix(b, "/")
-	switch {
-	case aslash && bslash:
-		return a + b[1:]
-	case !aslash && !bslash:
-		return a + "/" + b
-	}
-	return a + b
-}
-
-func stripAuth(req *http.Request) {
-	req.Header.Del("Authorization")
 }
 
 func checkPermissions(acc Access, res StripeResource, key []byte, req *http.Request) error {
@@ -121,24 +103,4 @@ func NewStripePermissionsProxy(stripeKey string, delegate http.Handler) http.Han
 	}
 
 	return r
-}
-
-func NewStripeScopedProxy(stripeAPI *url.URL) *httputil.ReverseProxy {
-	stripeAPIQuery := stripeAPI.RawQuery
-	director := func(req *http.Request) {
-		req.URL.Scheme = stripeAPI.Scheme
-		req.URL.Host = stripeAPI.Host
-		req.URL.Path = singleJoiningSlash(stripeAPI.Path, req.URL.Path)
-		if stripeAPIQuery == "" || req.URL.RawQuery == "" {
-			req.URL.RawQuery = stripeAPIQuery + req.URL.RawQuery
-		} else {
-			req.URL.RawQuery = stripeAPIQuery + "&" + req.URL.RawQuery
-		}
-		if _, ok := req.Header["User-Agent"]; !ok {
-			// explicitly disable User-Agent so it's not set to default value
-			req.Header.Set("User-Agent", "")
-		}
-
-	}
-	return &httputil.ReverseProxy{Director: director}
 }
