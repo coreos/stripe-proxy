@@ -15,12 +15,17 @@
 package proxy
 
 import (
-	"errors"
+	"encoding/json"
 	"net/http"
 	"strings"
 
 	"github.com/gorilla/mux"
+	"github.com/stripe/stripe-go"
 )
+
+type ErrorResponse struct {
+	StripeError stripe.Error `json:"error"`
+}
 
 // These routes will match in order, so the ResourceAll route is a fallback and
 // transfer reversals will match before transfers.
@@ -46,10 +51,28 @@ var accessMethods = map[Access][]string{
 	Write: []string{"POST", "DELETE", "PUT", "PATCH"},
 }
 
-func checkPermissions(acc Access, res StripeResource, key []byte, req *http.Request) error {
+func validButInsufficientError(msg string) *ErrorResponse {
+	return &ErrorResponse{
+		StripeError: stripe.Error{
+			Type:           stripe.ErrorTypePermission,
+			Msg:            msg,
+			HTTPStatusCode: 403,
+		}}
+}
+
+func invalidCredentialError(msg string) *ErrorResponse {
+	return &ErrorResponse{
+		StripeError: stripe.Error{
+			Type:           stripe.ErrorTypeAuthentication,
+			Msg:            msg,
+			HTTPStatusCode: 403,
+		}}
+}
+
+func checkPermissions(acc Access, res StripeResource, key []byte, req *http.Request) *ErrorResponse {
 	authHeader := req.Header.Get("Authorization")
 	if authHeader == "" {
-		return errors.New("Request requires Authorization header")
+		return invalidCredentialError("Request requires Authorization header")
 
 	}
 
@@ -60,17 +83,17 @@ func checkPermissions(acc Access, res StripeResource, key []byte, req *http.Requ
 		var ok bool
 		signedPermissions, _, ok = req.BasicAuth()
 		if !ok {
-			return errors.New("Request requires valid Basic or Bearer auth header")
+			return invalidCredentialError("Request requires valid Basic or Bearer auth header")
 		}
 	}
 
 	granted, err := Verify(signedPermissions, key)
 	if err != nil {
-		return err
+		return invalidCredentialError(err.Error())
 	}
 
 	if !granted.Can(acc, res) {
-		return errors.New("Request requires permission that was not granted")
+		return validButInsufficientError("Request requires permission that was not granted")
 	}
 
 	return nil
@@ -90,7 +113,8 @@ func NewStripePermissionsProxy(stripeKey string, delegate http.Handler) http.Han
 				err := checkPermissions(accessToCheck, resourceToCheck, stripeKeyAsBytes, req)
 				if err != nil {
 					// Abort the request
-					http.Error(rw, err.Error(), http.StatusForbidden)
+					rw.WriteHeader(403)
+					json.NewEncoder(rw).Encode(err)
 					return
 				}
 
