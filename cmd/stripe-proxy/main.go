@@ -14,8 +14,6 @@
 
 package main
 
-import "github.com/coreos/stripe-proxy/cmd"
-
 func main() {
-	cmd.Execute()
+	Execute()
 }
