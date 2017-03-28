@@ -12,10 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package cmd
 
 import (
-	"fmt"
 	"os"
 
 	log "github.com/Sirupsen/logrus"
@@ -38,7 +37,6 @@ to sub-portions of the Stripe API`,
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if err := RootCmd.Execute(); err != nil {
-		fmt.Println(err)
 		os.Exit(-1)
 	}
 }
@@ -47,7 +45,7 @@ func init() {
 	cobra.OnInitialize(initConfig)
 
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.stripe-proxy.yaml)")
-	RootCmd.PersistentFlags().StringVarP(&stripeKey, "key", "k", "", "Stripe private key")
+	RootCmd.PersistentFlags().StringVar(&stripeKey, "stripekey", "", "Stripe private key")
 }
 
 // initConfig reads in config file and ENV variables if set.

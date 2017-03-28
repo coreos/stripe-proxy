@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package cmd
 
 import (
 	"fmt"
@@ -24,7 +24,7 @@ import (
 	"github.com/coreos/stripe-proxy/proxy"
 )
 
-var inputToSign uint32
+var inputToSign uint64
 
 // signCmd represents the sign command
 var signCmd = &cobra.Command{
@@ -49,5 +49,5 @@ var signCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(signCmd)
-	signCmd.Flags().Uint32Var(&inputToSign, "input", 1, "Integer representation of permissions vector")
+	signCmd.Flags().Uint64Var(&inputToSign, "input", 1, "Integer representation of permissions vector")
 }
