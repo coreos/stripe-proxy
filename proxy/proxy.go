@@ -124,6 +124,13 @@ func checkPermissions(acc Access, res StripeResource, key []byte, req *http.Requ
 		return validButInsufficientError("Request requires permission that was not granted")
 	}
 
+	if anyExpand := req.URL.Query().Get("expand[]"); anyExpand != "" && !granted.Can(acc, ResourceAll) {
+		// This is a necessary shortcut until such time that Stripe publishes
+		// detailed machine-readable API docs, which include the mapping of
+		// expand params to response schema/resource.
+		return validButInsufficientError("Requests that expand return values must have permissions to all resources")
+	}
+
 	return nil
 }
 
