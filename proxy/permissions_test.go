@@ -28,7 +28,7 @@ type e struct {
 
 func TestPermissions(t *testing.T) {
 	var permTests = []struct {
-		encoded uint32
+		encoded uint64
 		allowed []e
 		denied  []e
 	}{
@@ -43,6 +43,9 @@ func TestPermissions(t *testing.T) {
 			[]e{e{Read, ResourceAll}, e{Read, ResourceCustomers}, e{Write, ResourceBalance}, e{Write, ResourceAll}, e{ReadWrite, ResourceAll}, e{Write, ResourceCharges}}},
 		{8,
 			[]e{e{Write, ResourceBalance}},
+			[]e{e{Read, ResourceAll}, e{Read, ResourceCustomers}, e{Read, ResourceBalance}, e{Write, ResourceAll}, e{ReadWrite, ResourceAll}, e{Write, ResourceCharges}}},
+		{864691128455135232,
+			[]e{e{ReadWrite, ResourceRadarRule}, e{Read, ResourceRadarRule}, e{Write, ResourceRadarRule}},
 			[]e{e{Read, ResourceAll}, e{Read, ResourceCustomers}, e{Read, ResourceBalance}, e{Write, ResourceAll}, e{ReadWrite, ResourceAll}, e{Write, ResourceCharges}}},
 	}
 
@@ -63,7 +66,7 @@ func TestPermissions(t *testing.T) {
 func TestGrants(t *testing.T) {
 	var createTests = []struct {
 		grants   []e
-		expected uint32
+		expected uint64
 	}{
 		{[]e{e{Read, ResourceAll}},
 			1},

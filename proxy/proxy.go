@@ -30,20 +30,48 @@ type ErrorResponse struct {
 // These routes will match in order, so the ResourceAll route is a fallback and
 // transfer reversals will match before transfers.
 var resourceRoutes = []struct {
-	sr    StripeResource
 	route string
+	sr    StripeResource
 }{
-	{ResourceBalance, "/v1/balance"},
-	{ResourceCharges, "/v1/charges"},
-	{ResourceCustomers, "/v1/customers"},
-	{ResourceDisputes, "/v1/disputes"},
-	{ResourceEvents, "/v1/events"},
-	{ResourceFileUploads, "/v1/files"},
-	{ResourceRefunds, "/v1/refunds"},
-	{ResourceTokens, "/v1/tokens"},
-	{ResourceTransferReversals, "/v1/transfers/{transfer_id}/reversals"},
-	{ResourceTransfers, "/v1/transfers"},
-	{ResourceAll, "/v1/"},
+	// Payment methods
+	{"/v1/customers/{cust_id}/sources", ResourceSource},
+
+	// Core resources
+	{"/v1/balance", ResourceBalance},
+	{"/v1/charges", ResourceCharges},
+	{"/v1/customers", ResourceCustomers},
+	{"/v1/disputes", ResourceDisputes},
+	{"/v1/events", ResourceEvents},
+	{"/v1/files", ResourceFileUploads},
+	{"/v1/refunds", ResourceRefunds},
+	{"/v1/tokens", ResourceTokens},
+	{"/v1/transfers/{transfer_id}/reversals", ResourceTransferReversals},
+	{"/v1/transfers", ResourceTransfers},
+
+	// Connect resources
+	{"/v1/accounts", ResourceAccount},
+	{"/v1/application_fees/{fee_id}/refunds", ResourceApplicationFeeRefund},
+	{"/v1/application_fees", ResourceApplicationFee},
+	{"/v1/recipients", ResourceRecipient},
+	{"/v1/country_specs", ResourceCountrySpec},
+	{"/v1/accounts/{account_id}/external_accounts", ResourceExternalAccount},
+
+	// Relay resources
+	{"/v1/orders", ResourceOrder},
+	{"/v1/order_returns", ResourceOrderReturn},
+	{"/v1/products", ResourceProduct},
+	{"/v1/skus", ResourceSKU},
+
+	// Subscription resources
+	{"/v1/coupons", ResourceCoupon},
+	{"/v1/invoices", ResourceInvoice},
+	{"/v1/invoiceitems", ResourceInvoiceItem},
+	{"/v1/plans", ResourcePlan},
+	{"/v1/subscriptions", ResourceSubscription},
+	{"/v1/subscription_items", ResourceSubscriptionItem},
+
+	// Catch all
+	{"/v1/", ResourceAll},
 }
 
 var accessMethods = map[Access][]string{
@@ -94,6 +122,13 @@ func checkPermissions(acc Access, res StripeResource, key []byte, req *http.Requ
 
 	if !granted.Can(acc, res) {
 		return validButInsufficientError("Request requires permission that was not granted")
+	}
+
+	if anyExpand := req.URL.Query().Get("expand[]"); anyExpand != "" && !granted.Can(acc, ResourceAll) {
+		// This is a necessary shortcut until such time that Stripe publishes
+		// detailed machine-readable API docs, which include the mapping of
+		// expand params to response schema/resource.
+		return validButInsufficientError("Requests that expand return values must have permissions to all resources")
 	}
 
 	return nil

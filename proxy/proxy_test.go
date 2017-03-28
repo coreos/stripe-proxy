@@ -160,3 +160,50 @@ func TestRejectedPermissions(t *testing.T) {
 	assert.True(ok)
 	assert.Equal(418, stripeError.HTTPStatusCode)
 }
+
+func TestExpandParams(t *testing.T) {
+	assert := assert.New(t)
+
+	proxy, testUpstream := newTeapotProxy()
+	server := httptest.NewServer(proxy)
+	defer server.Close()
+
+	p := &Permission{}
+	p.SetAccess(Read, ResourceCharges)
+	signed, err := Sign(p, []byte(proxyTestStripeKey))
+	assert.Nil(err)
+
+	sc := &client.API{}
+	sc.Init(signed, getBackends(server))
+
+	// Without the expand it works
+	params := &stripe.ChargeParams{}
+	_, ch := sc.Charges.Get("ch_example_id", params)
+
+	teapotError, ok := ch.(*stripe.Error)
+	assert.True(ok)
+	assert.Equal(418, teapotError.HTTPStatusCode)
+	testUpstream.AssertNumberOfCalls(t, "ServeHTTP", 1)
+
+	// With the expand it fails
+	params.Expand("customer")
+	_, expectError := sc.Charges.Get("ch_example_id", params)
+
+	permissionError, ok := expectError.(*stripe.Error)
+	assert.True(ok)
+
+	assert.Equal(403, permissionError.HTTPStatusCode)
+	assert.Equal(stripe.ErrorTypePermission, permissionError.Type)
+	testUpstream.AssertNumberOfCalls(t, "ServeHTTP", 1)
+
+	// By granting resource all it works again
+	p.SetAccess(Read, ResourceAll)
+	newaccess, err := Sign(p, []byte(proxyTestStripeKey))
+	sc.Init(newaccess, getBackends(server))
+
+	_, chWorks := sc.Charges.Get("ch_example_id", params)
+	expectTeapotAgain, ok := chWorks.(*stripe.Error)
+	assert.True(ok)
+	assert.Equal(418, expectTeapotAgain.HTTPStatusCode)
+	testUpstream.AssertNumberOfCalls(t, "ServeHTTP", 2)
+}
