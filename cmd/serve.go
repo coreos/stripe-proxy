@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package cmd
 
 import (
 	"errors"
@@ -29,6 +29,8 @@ import (
 
 var upstreamURI string
 var listenAddr string
+var certificatePath string
+var privateKeyPath string
 
 // serveCmd represents the serve command
 var serveCmd = &cobra.Command{
@@ -46,10 +48,24 @@ var serveCmd = &cobra.Command{
 		}
 		log.Debugf("parsed host: %s %s", url.Host, err)
 
+		if (certificatePath != "" || privateKeyPath != "") && (certificatePath == "" || privateKeyPath == "") {
+			msg := "Both the private key and certificate chain files must be specified to enable HTTPS"
+			return errors.New(msg)
+		}
+
 		rp := httputil.NewSingleHostReverseProxy(url)
 		proxy := proxy.NewStripePermissionsProxy(stripeKey, rp)
+
 		log.Infof("serve called with Stripe key: %s on %s", stripeKey, listenAddr)
-		http.ListenAndServe(listenAddr, proxy)
+		if certificatePath != "" {
+			log.Debug("HTTPS enabled")
+			log.Fatal(http.ListenAndServeTLS(listenAddr, certificatePath, privateKeyPath, proxy))
+			log.Infof("serve called with Stripe key: %s on %s", stripeKey, listenAddr)
+		} else {
+			log.Debug("HTTPS disabled")
+			log.Fatal(http.ListenAndServe(listenAddr, proxy))
+		}
+
 		return nil
 	},
 }
@@ -58,4 +74,6 @@ func init() {
 	RootCmd.AddCommand(serveCmd)
 	serveCmd.Flags().StringVar(&upstreamURI, "uri", "https://api.stripe.com", "Upstream Stripe API URI to talk to.")
 	serveCmd.Flags().StringVar(&listenAddr, "listen", ":9090", "Interface and port on which to listen")
+	serveCmd.Flags().StringVar(&certificatePath, "cert", "", "Path to the PEM encoded SSL certificate chain file")
+	serveCmd.Flags().StringVar(&privateKeyPath, "key", "", "Path to the PEM encoded SSL private key file")
 }

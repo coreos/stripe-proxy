@@ -11,7 +11,7 @@ There are two subcommands which can be used to interact with stripe-proxy. The `
 To start the reverse proxy, use a command like the following:
 
 ```
-stripe-proxy -k <your_stripe_private_key> serve
+stripe-proxy --stripekey <your_stripe_private_key> serve
 ```
 
 ### Sign
@@ -20,7 +20,7 @@ To generate a set of signed credentials, you must first calculate the permission
 
 ```
 # Grants read only access to /customer/ paths
-stripe-proxy -k <your_stripe_private_key> sign --input 64
+stripe-proxy --stripekey <your_stripe_private_key> sign --input 64
 ```
 
 Output:
@@ -69,7 +69,7 @@ Individual bit mask:
 
 ```go
 func resourceMask(resource StripeResource, access Access) uint32 {
-	return uint32(access << (uint32(resource) * 2))
+	return uint64(access << (uint64(resource) * 2))
 }
 ```
 
