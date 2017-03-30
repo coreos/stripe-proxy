@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Generate Signed Stripe Credentials</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- External Libraries-->
+    <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-animate.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-aria.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-messages.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/angular_material/1.1.0/angular-material.min.js"></script>
+    <link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/angular_material/1.1.0/angular-material.min.css">
+</head>
+<body ng-app="app">
+<div ng-controller="PermissionsPickerController">
+    <md-content>
+        <md-toolbar class="md-hue-2">
+            <h3 style="padding: 0 10px;">Stripe Permissions Token Generator</h3>
+        </md-toolbar>
+
+        <div layout="row">
+            <div flex="33">
+                <div layout="row" layout-padding>
+                    <md-input-container>
+                        <label>Stripe Private Key:</label>
+                        <input ng-model="stripeKey"
+                               type="password">
+                    </md-input-container>
+                </div>
+                <md-list>
+                    <md-list-item>
+                        <p>Resource Name</p>
+                        <p>Read</p>
+                        <p>Write</p>
+                    </md-list-item>
+                    <md-list-item ng-repeat="permission in permissions"
+                                  ng-click="null">
+                        <p>{{ permission.name}}</p>
+                        <md-checkbox ng-model="permission.read"
+                                     type="checkbox"
+                                     class="md-primary"></md-checkbox>
+                        <md-checkbox ng-model="permission.write"
+                                     type="checkbox"
+                                     class="md-primary"></md-checkbox>
+                    </md-list-item>
+                </md-list>
+
+                <div layout="row" layout-align="end">
+                    <md-button class="md-secondary"
+                               ng-click="reset()">
+                        Reset All
+                    </md-button>
+                    <md-button class="md-primary"
+                               ng-click="generate()">
+                        Generate
+                    </md-button>
+                </div>
+            </div>
+            <div flex="66"></div>
+        </div>
+    </md-content>
+</div>
+<script>
+    (function() {
+        angular.module("app", ['ngMaterial'])
+            .controller("PermissionsPickerController", ['$scope', function($scope) {
+                $scope.permissions = [
+                    {name: 'ResourceAll',               read: false, write: false},
+                    {name: 'ResourceBalance',           read: false, write: false},
+                    {name: 'ResourceCharges',           read: false, write: false},
+                    {name: 'ResourceCustomers',         read: false, write: false},
+                    {name: 'ResourceDisputes',          read: false, write: false},
+                    {name: 'ResourceEvents',            read: false, write: false},
+                    {name: 'ResourceFileUploads',       read: false, write: false},
+                    {name: 'ResourceRefunds',           read: false, write: false},
+                    {name: 'ResourceTokens',            read: false, write: false},
+                    {name: 'ResourceFileUploads',       read: false, write: false},
+                    {name: 'ResourceTransfers',         read: false, write: false},
+                    {name: 'ResourceTransferReversals', read: false, write: false},
+                ];
+
+                $scope.reset = function() {
+                    $scope.permissons = $scope.permissions.map(function(permission) {
+                        permission.read = false;
+                        permission.write = false;
+
+                        return permission;
+                    });
+                };
+
+                $scope.generate = function() {
+                    window.alert("Generating token");
+                };
+            }]);
+    })();
+</script>
+</body>
+</html>
