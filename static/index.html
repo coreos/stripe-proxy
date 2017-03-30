@@ -11,89 +11,115 @@
     <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-messages.min.js"></script>
     <script src="http://ajax.googleapis.com/ajax/libs/angular_material/1.1.0/angular-material.min.js"></script>
     <link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/angular_material/1.1.0/angular-material.min.css">
+
+    <!-- Custom styles -->
+    <style>
+        .header-row {
+            color: rgba(0,0,0,0.54);
+        }
+    </style>
 </head>
 <body ng-app="app">
-<div ng-controller="PermissionsPickerController">
-    <md-content>
-        <md-toolbar class="md-hue-2">
-            <h3 style="padding: 0 10px;">Stripe Permissions Token Generator</h3>
-        </md-toolbar>
+    <div ng-controller="PermissionsPickerController">
+        <md-content>
+            <md-toolbar class="md-hue-2">
+                <h2 class="md-toolbar-tools"><span>Stripe Permissions Token Generator</span></h2>
+            </md-toolbar>
 
-        <div layout="row">
-            <div flex="33">
-                <div layout="row" layout-padding>
-                    <md-input-container>
-                        <label>Stripe Private Key:</label>
-                        <input ng-model="stripeKey"
-                               type="password">
-                    </md-input-container>
-                </div>
-                <md-list>
-                    <md-list-item>
-                        <p>Resource Name</p>
-                        <p>Read</p>
-                        <p>Write</p>
-                    </md-list-item>
-                    <md-list-item ng-repeat="permission in permissions"
-                                  ng-click="null">
-                        <p>{{ permission.name}}</p>
-                        <md-checkbox ng-model="permission.read"
-                                     type="checkbox"
-                                     class="md-primary"></md-checkbox>
-                        <md-checkbox ng-model="permission.write"
-                                     type="checkbox"
-                                     class="md-primary"></md-checkbox>
-                    </md-list-item>
-                </md-list>
+            <div layout="row">
+                <div flex="33">
+                    <div layout="row" layout-padding>
+                        <md-input-container>
+                            <label>Stripe Private Key:</label>
+                            <input ng-model="stripeKey"
+                                   type="password"
+                                   required>
+                        </md-input-container>
+                    </div>
+                    <md-list>
+                        <md-list-item class="header-row">
+                            <b flex="60">Resource Name</b>
+                            <b flex="20">Read</b>
+                            <b flex="20">Write</b>
+                        </md-list-item>
+                        <md-list-item ng-repeat="permission in permissions"
+                                      ng-click="null">
+                            <p flex="70">{{ permission.name}}</p>
+                            <md-checkbox ng-model="permission.read"
+                                         ng-change="updatePermissions(permission, 'read')"
+                                         type="checkbox"
+                                         class="md-primary"
+                                         flex="15"></md-checkbox>
+                            <md-checkbox ng-model="permission.write"
+                                         ng-change="updatePermissions(permission, 'write')"
+                                         type="checkbox"
+                                         class="md-primary"
+                                         flex="15"></md-checkbox>
+                        </md-list-item>
+                    </md-list>
 
-                <div layout="row" layout-align="end">
-                    <md-button class="md-secondary"
-                               ng-click="reset()">
-                        Reset All
-                    </md-button>
-                    <md-button class="md-primary"
-                               ng-click="generate()">
-                        Generate
-                    </md-button>
+                    <div layout="row" layout-align="end">
+                        <md-button class="md-secondary"
+                                   ng-click="setAll('read', false); setAll('write', false)">
+                            Reset All
+                        </md-button>
+                        <md-button class="md-primary"
+                                   ng-click="generate()"
+                                   ng-disabled="stripeKey.length <= 0">
+                            Generate
+                        </md-button>
+                    </div>
                 </div>
+                <div flex="66"></div>
             </div>
-            <div flex="66"></div>
-        </div>
-    </md-content>
-</div>
-<script>
-    (function() {
-        angular.module("app", ['ngMaterial'])
-            .controller("PermissionsPickerController", ['$scope', function($scope) {
-                $scope.permissions = [
-                    {name: 'ResourceAll',               read: false, write: false},
-                    {name: 'ResourceBalance',           read: false, write: false},
-                    {name: 'ResourceCharges',           read: false, write: false},
-                    {name: 'ResourceCustomers',         read: false, write: false},
-                    {name: 'ResourceDisputes',          read: false, write: false},
-                    {name: 'ResourceEvents',            read: false, write: false},
-                    {name: 'ResourceFileUploads',       read: false, write: false},
-                    {name: 'ResourceRefunds',           read: false, write: false},
-                    {name: 'ResourceTokens',            read: false, write: false},
-                    {name: 'ResourceFileUploads',       read: false, write: false},
-                    {name: 'ResourceTransfers',         read: false, write: false},
-                    {name: 'ResourceTransferReversals', read: false, write: false},
-                ];
+        </md-content>
+    </div>
+    <script>
+        (function() {
+            angular.module("app", ['ngMaterial'])
+                .controller("PermissionsPickerController", ['$scope', function($scope) {
+                    $scope.stripeKey = "";
+                    $scope.permissions = [
+                        {name: 'ResourceAll',               read: false, write: false},
+                        {name: 'ResourceBalance',           read: false, write: false},
+                        {name: 'ResourceCharges',           read: false, write: false},
+                        {name: 'ResourceCustomers',         read: false, write: false},
+                        {name: 'ResourceDisputes',          read: false, write: false},
+                        {name: 'ResourceEvents',            read: false, write: false},
+                        {name: 'ResourceFileUploads',       read: false, write: false},
+                        {name: 'ResourceRefunds',           read: false, write: false},
+                        {name: 'ResourceTokens',            read: false, write: false},
+                        {name: 'ResourceFileUploads',       read: false, write: false},
+                        {name: 'ResourceTransfers',         read: false, write: false},
+                        {name: 'ResourceTransferReversals', read: false, write: false},
+                    ];
 
-                $scope.reset = function() {
-                    $scope.permissons = $scope.permissions.map(function(permission) {
-                        permission.read = false;
-                        permission.write = false;
+                    $scope.updatePermissions = function(permission, permissionType) {
+                        if (permission.name == 'ResourceAll' && permission[permissionType]) {
+                            $scope.setAll(permissionType, permission[permissionType])
+                        }
+                    };
 
-                        return permission;
-                    });
-                };
+                    $scope.setAll = function(permissionType, value) {
+                        $scope.permissons = $scope.permissions.map(function(permission) {
+                            switch(permissionType) {
+                                case "read":
+                                    permission.read = value;
+                                    break;
+                                case "write":
+                                    permission.write = value;
+                                    break;
+                            }
 
-                $scope.generate = function() {
-                    window.alert("Generating token");
-                };
-            }]);
-    })();
-</script>
+                            return permission;
+                        });
+                    };
+
+                    $scope.generate = function() {
+                        window.alert("Generating token");
+                    };
+                }]);
+        })();
+    </script>
 </body>
 </html>
