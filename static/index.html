@@ -70,7 +70,15 @@
                         </md-button>
                     </div>
                 </div>
-                <div flex="66"></div>
+                <div flex="66">
+                    <div style="padding-top: 30px;">
+                        <md-input-container>
+                            <label>Stripe Credentials</label>
+                            <textarea ng-model="stripeCredentials"
+                                      disabled></textarea>
+                        </md-input-container>
+                    </div>
+                </div>
             </div>
         </md-content>
     </div>
@@ -78,6 +86,7 @@
         (function() {
             angular.module("app", ['ngMaterial'])
                 .controller("PermissionsPickerController", ['$scope', function($scope) {
+                    $scope.stripeCredentials = "";
                     $scope.stripeKey = "";
                     $scope.permissions = [
                         {name: 'ResourceAll',               read: false, write: false},
@@ -101,22 +110,14 @@
                     };
 
                     $scope.setAll = function(permissionType, value) {
-                        $scope.permissons = $scope.permissions.map(function(permission) {
-                            switch(permissionType) {
-                                case "read":
-                                    permission.read = value;
-                                    break;
-                                case "write":
-                                    permission.write = value;
-                                    break;
-                            }
-
-                            return permission;
+                        $scope.permissions.forEach(function(permission) {
+                            permission[permissionType] = value;
                         });
                     };
 
                     $scope.generate = function() {
-                        window.alert("Generating token");
+                        // TODO: Generate credentials using identical method as CLI
+                        $scope.stripeCredentials = ";alsjf;lsajdlfjalsdjf;asldjfldsajf;ljdsaf;ldsa";
                     };
                 }]);
         })();
