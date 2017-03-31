@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <!-- External Libraries-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9/crypto-js.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9/hmac-sha256.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9/enc-base64.min.js.map"></script>
     <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular.min.js"></script>
     <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-animate.min.js"></script>
     <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-aria.min.js"></script>
@@ -48,11 +51,13 @@
                             <md-checkbox ng-model="permission.read"
                                          ng-change="updatePermissions(permission, 'read')"
                                          type="checkbox"
+                                         aria-label="read"
                                          class="md-primary"
                                          flex="15"></md-checkbox>
                             <md-checkbox ng-model="permission.write"
                                          ng-change="updatePermissions(permission, 'write')"
                                          type="checkbox"
+                                         aria-label="write"
                                          class="md-primary"
                                          flex="15"></md-checkbox>
                         </md-list-item>
@@ -84,23 +89,44 @@
     </div>
     <script>
         (function() {
-            angular.module("app", ['ngMaterial'])
-                .controller("PermissionsPickerController", ['$scope', function($scope) {
+            angular
+                .module("app", ['ngMaterial'])
+                .constant('Crypto', CryptoJS)
+                .controller("PermissionsPickerController", ['$scope', 'Crypto', function($scope, crypto) {
                     $scope.stripeCredentials = "";
                     $scope.stripeKey = "";
                     $scope.permissions = [
-                        {name: 'ResourceAll',               read: false, write: false},
-                        {name: 'ResourceBalance',           read: false, write: false},
-                        {name: 'ResourceCharges',           read: false, write: false},
-                        {name: 'ResourceCustomers',         read: false, write: false},
-                        {name: 'ResourceDisputes',          read: false, write: false},
-                        {name: 'ResourceEvents',            read: false, write: false},
-                        {name: 'ResourceFileUploads',       read: false, write: false},
-                        {name: 'ResourceRefunds',           read: false, write: false},
-                        {name: 'ResourceTokens',            read: false, write: false},
-                        {name: 'ResourceFileUploads',       read: false, write: false},
-                        {name: 'ResourceTransfers',         read: false, write: false},
-                        {name: 'ResourceTransferReversals', read: false, write: false},
+                        {name: 'ResourceAll',                  read: false, write: false},
+                        {name: 'ResourceBalance',              read: false, write: false},
+                        {name: 'ResourceCharges',              read: false, write: false},
+                        {name: 'ResourceCustomers',            read: false, write: false},
+                        {name: 'ResourceDisputes',             read: false, write: false},
+                        {name: 'ResourceEvents',               read: false, write: false},
+                        {name: 'ResourceFileUploads',          read: false, write: false},
+                        {name: 'ResourceRefunds',              read: false, write: false},
+                        {name: 'ResourceTokens',               read: false, write: false},
+                        {name: 'ResourceFileUploads',          read: false, write: false},
+                        {name: 'ResourceTransfers',            read: false, write: false},
+                        {name: 'ResourceTransferReversals',    read: false, write: false},
+                        {name: 'ResourceAccount',              read: false, write: false},
+                        {name: 'ResourceApplicationFeeRefund', read: false, write: false},
+                        {name: 'ResourceApplicationFee',       read: false, write: false},
+                        {name: 'ResourceRecipient',            read: false, write: false},
+                        {name: 'ResourceCountrySpec',          read: false, write: false},
+                        {name: 'ResourceExternalAccount',      read: false, write: false},
+                        {name: 'ResourceSource',               read: false, write: false},
+                        {name: 'ResourceOrder',                read: false, write: false},
+                        {name: 'ResourceOrderReturn',          read: false, write: false},
+                        {name: 'ResourceProduct',              read: false, write: false},
+                        {name: 'ResourceSKU',                  read: false, write: false},
+                        {name: 'ResourceCoupon',               read: false, write: false},
+                        {name: 'ResourceInvoice',              read: false, write: false},
+                        {name: 'ResourceInvoiceItem',          read: false, write: false},
+                        {name: 'ResourcePlan',                 read: false, write: false},
+                        {name: 'ResourceSubscription',         read: false, write: false},
+                        {name: 'ResourceSubscriptionItem',     read: false, write: false},
+                        {name: 'ResourceRadarReview',          read: false, write: false},
+                        {name: 'ResourceRadarRule',            read: false, write: false},
                     ];
 
                     $scope.updatePermissions = function(permission, permissionType) {
@@ -116,8 +142,16 @@
                     };
 
                     $scope.generate = function() {
+                        var permissionsVector = $scope.permissions.map(function(permission, index) {
+                            return index;
+                        })
+                        .reduce(function(acc, val) {
+                            return acc + val;
+                        });
                         // TODO: Generate credentials using identical method as CLI
-                        $scope.stripeCredentials = ";alsjf;lsajdlfjalsdjf;asldjfldsajf;ljdsaf;ldsa";
+                        var hash = crypto.enc.Base64.stringify(crypto.HmacSHA256(permissionsVector, $scope.stripeKey));
+
+                        $scope.stripeCredentials = hash;
                     };
                 }]);
         })();
