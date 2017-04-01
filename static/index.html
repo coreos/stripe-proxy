@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <!-- External Libraries-->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9/crypto-js.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9/crypto-js.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9/hmac-sha256.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9/enc-base64.min.js.map"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9/enc-base64.min.js"></script>
     <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular.min.js"></script>
     <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-animate.min.js"></script>
     <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-aria.min.js"></script>
@@ -143,14 +143,16 @@
 
                     $scope.generate = function() {
                         var permissionsVector = $scope.permissions.map(function(permission, index) {
-                            return index;
+                            // Ignore permission value if ResourceAll is set
+                            return !(index > 0 && $scope.permissions[0].read) && permission.read ? 1 : 0 +
+                                   !(index > 0 && $scope.permissions[0].write) && permission.write ? 2 : 0;
                         })
-                        .reduce(function(acc, val) {
-                            return acc + val;
+                        .reduce(function(acc, val, index) {
+                            return acc |= (val << (index * 2));
                         });
-                        // TODO: Generate credentials using identical method as CLI
-                        var hash = crypto.enc.Base64.stringify(crypto.HmacSHA256(permissionsVector, $scope.stripeKey));
+                        console.log(permissionsVector);
 
+                        var hash = crypto.enc.Base64.stringify(crypto.HmacSHA256(permissionsVector, $scope.stripeKey));
                         $scope.stripeCredentials = hash;
                     };
                 }]);
