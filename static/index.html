@@ -142,21 +142,44 @@
                     };
 
                     $scope.generate = function() {
-                        var permissionsVector = $scope.permissions.map(function(permission, index) {
-                            // Ignore permission value if ResourceAll is set
-                            return (!(index > 0 && $scope.permissions[0].read) && permission.read ? 1 : 0) +
-                                   (!(index > 0 && $scope.permissions[0].write) && permission.write ? 2 : 0);
-                        })
-                        .reduce(function(acc, val, index) {
-                            console.log(index, val, acc);
-                            return acc |= (val << (index * 2));
-                        });
-                        console.log(permissionsVector.toString(2), permissionsVector.toString(2).length);
-                        console.log(permissionsVector);
+                        var permissionsVector = $scope.permissions
+                            .map(function(permission, index) {
+                                // Ignore permission value if ResourceAll is set
+                                return (!(index > 0 && $scope.permissions[0].read) && permission.read ? 1 : 0) +
+                                       (!(index > 0 && $scope.permissions[0].write) && permission.write ? 2 : 0);
+                            })
+                            .reverse()
+                            // Reduce to binary string
+                            .map(function(val) {
+                                switch (val) {
+                                    case 0:
+                                        return "00";
+                                    case 1:
+                                        return "01";
+                                    case 2:
+                                        return "10";
+                                    case 3:
+                                        return "11";
+                                }
+                            })
+                            // Reduce to integer value
+//                            .reduce(function(acc, val, index) {
+//                                return acc |= (val << (index * 2));
+//                            })
+                            // Reduce to ASCII value
+//                            .map(function(val, index) {
+//                                var ascii = val << (index * 2);
+//                                console.log(ascii);
+//                                console.log(String.fromCharCode(ascii));
+//
+//                                return String.fromCharCode(ascii);
+//                            })
+                            .join("");
+                        console.log(permissionsVector, permissionsVector.length);
 
                         // TODO: Follow same algorithm in 'credentials.Sign' module
                         // Complication: JS does not support 64-bit integers...
-                        var mac = crypto.HmacSHA256(permissionsVector.toString(2), $scope.stripeKey);
+                        var mac = crypto.HmacSHA256(permissionsVector, $scope.stripeKey);
                         var permissionEncoded = permissionsVector.toString();
                         var macEncoded = crypto.enc.Base64.stringify(mac);
                         var permissionAndMac = [permissionEncoded, macEncoded];
