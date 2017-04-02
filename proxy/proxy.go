@@ -137,6 +137,11 @@ func checkPermissions(acc Access, res StripeResource, key []byte, req *http.Requ
 func NewStripePermissionsProxy(stripeKey string, delegate http.Handler) http.Handler {
 	r := mux.NewRouter()
 
+	// Client UI
+	r.HandleFunc("/", func(rw http.ResponseWriter, req *http.Request) {
+		http.ServeFile(rw, req, "./static/index.html")
+	})
+
 	stripeKeyAsBytes := []byte(stripeKey)
 
 	for _, rr := range resourceRoutes {

@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <!-- External Libraries-->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9/crypto-js.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9/hmac-sha256.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9/enc-base64.min.js"></script>
-    <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9/crypto-js.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9/hmac-sha256.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9/enc-base64.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular.js"></script>
     <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-animate.min.js"></script>
     <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-aria.min.js"></script>
     <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-messages.min.js"></script>
@@ -144,16 +144,24 @@
                     $scope.generate = function() {
                         var permissionsVector = $scope.permissions.map(function(permission, index) {
                             // Ignore permission value if ResourceAll is set
-                            return !(index > 0 && $scope.permissions[0].read) && permission.read ? 1 : 0 +
-                                   !(index > 0 && $scope.permissions[0].write) && permission.write ? 2 : 0;
+                            return (!(index > 0 && $scope.permissions[0].read) && permission.read ? 1 : 0) +
+                                   (!(index > 0 && $scope.permissions[0].write) && permission.write ? 2 : 0);
                         })
                         .reduce(function(acc, val, index) {
+                            console.log(index, val, acc);
                             return acc |= (val << (index * 2));
                         });
+                        console.log(permissionsVector.toString(2), permissionsVector.toString(2).length);
                         console.log(permissionsVector);
 
-                        var hash = crypto.enc.Base64.stringify(crypto.HmacSHA256(permissionsVector, $scope.stripeKey));
-                        $scope.stripeCredentials = hash;
+                        // TODO: Follow same algorithm in 'credentials.Sign' module
+                        // Complication: JS does not support 64-bit integers...
+                        var mac = crypto.HmacSHA256(permissionsVector.toString(2), $scope.stripeKey);
+                        var permissionEncoded = permissionsVector.toString();
+                        var macEncoded = crypto.enc.Base64.stringify(mac);
+                        var permissionAndMac = [permissionEncoded, macEncoded];
+
+                        $scope.stripeCredentials = permissionAndMac.join("_");
                     };
                 }]);
         })();
