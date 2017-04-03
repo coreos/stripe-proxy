@@ -41,13 +41,20 @@
                                            required>
                                 </md-input-container>
 
+                                <div layout="row" layout-align="end">
+                                    <md-button class="md-secondary"
+                                               ng-click="setAll('read', false); setAll('write', false)">
+                                        Reset All
+                                    </md-button>
+                                </div>
+
                                 <md-list>
                                     <md-list-item class="header-row">
                                         <b flex="60">Resource Name</b>
                                         <b flex="20">Read</b>
                                         <b flex="20">Write</b>
                                     </md-list-item>
-                                    <md-list-item ng-repeat="permission in permissions"
+                                    <md-list-item ng-repeat="permission in permissions track by $index"
                                                   ng-click="null">
                                         <p flex="70">{{ permission.name}}</p>
                                         <md-checkbox ng-model="permission.read"
@@ -55,27 +62,17 @@
                                                      type="checkbox"
                                                      aria-label="read"
                                                      class="md-primary"
-                                                     flex="15"></md-checkbox>
+                                                     flex="15"
+                                                     ng-disabled="$index > 0 && permissions[0].read"></md-checkbox>
                                         <md-checkbox ng-model="permission.write"
                                                      ng-change="updatePermissions(permission, 'write')"
                                                      type="checkbox"
                                                      aria-label="write"
                                                      class="md-primary"
-                                                     flex="15"></md-checkbox>
+                                                     flex="15"
+                                                     ng-disabled="$index > 0 && permissions[0].write"></md-checkbox>
                                     </md-list-item>
                                 </md-list>
-
-                                <div layout="row" layout-align="end">
-                                    <md-button class="md-secondary"
-                                               ng-click="setAll('read', false); setAll('write', false)">
-                                        Reset All
-                                    </md-button>
-                                    <md-button class="md-primary"
-                                               ng-click="generate()"
-                                               ng-disabled="stripeKey.length <= 0">
-                                        Generate
-                                    </md-button>
-                                </div>
                             </md-card-content>
                         </md-card>
 
@@ -148,6 +145,10 @@
                         if (permission.name == 'ResourceAll' && permission[permissionType]) {
                             $scope.setAll(permissionType, permission[permissionType])
                         }
+
+                        if ($scope.stripeKey.length > 0) {
+                            generate();
+                        }
                     };
 
                     $scope.setAll = function(permissionType, value) {
@@ -156,7 +157,7 @@
                         });
                     };
 
-                    $scope.generate = function() {
+                    function generate() {
                         var permissionBytes = new Uint8Array(8);
 
                         $scope.permissions
