@@ -23,7 +23,7 @@
     </style>
 </head>
 <body ng-app="app">
-    <div ng-controller="PermissionsPickerController">
+    <div ng-controller="MainCtrl">
         <md-content>
             <md-toolbar class="md-hue-2">
                 <h2 class="md-toolbar-tools"><span>Stripe Permissions Token Generator</span></h2>
@@ -92,7 +92,8 @@
             angular
                 .module("app", ['ngMaterial'])
                 .constant('Crypto', CryptoJS)
-                .controller("PermissionsPickerController", ['$scope', 'Crypto', function($scope, crypto) {
+                .constant('base64Encode', btoa)
+                .controller("MainCtrl", ['$scope', 'Crypto', 'base64Encode', function($scope, crypto, base64Encode) {
                     $scope.stripeCredentials = "";
                     $scope.stripeKey = "";
                     $scope.permissions = [
@@ -142,46 +143,29 @@
                     };
 
                     $scope.generate = function() {
-                        var permissionsVector = $scope.permissions
+                        var permissionBytes = new Uint8Array(8);
+
+                        $scope.permissions
                             .map(function(permission, index) {
                                 // Ignore permission value if ResourceAll is set
                                 return (!(index > 0 && $scope.permissions[0].read) && permission.read ? 1 : 0) +
                                        (!(index > 0 && $scope.permissions[0].write) && permission.write ? 2 : 0);
                             })
-                            .reverse()
                             // Reduce to binary string
-                            .map(function(val) {
-                                switch (val) {
-                                    case 0:
-                                        return "00";
-                                    case 1:
-                                        return "01";
-                                    case 2:
-                                        return "10";
-                                    case 3:
-                                        return "11";
-                                }
-                            })
-                            // Reduce to integer value
-//                            .reduce(function(acc, val, index) {
-//                                return acc |= (val << (index * 2));
-//                            })
-                            // Reduce to ASCII value
-//                            .map(function(val, index) {
-//                                var ascii = val << (index * 2);
-//                                console.log(ascii);
-//                                console.log(String.fromCharCode(ascii));
-//
-//                                return String.fromCharCode(ascii);
-//                            })
-                            .join("");
-                        console.log(permissionsVector, permissionsVector.length);
+                            .forEach(function(val, index) {
+                                permissionBytes[Math.floor((index * 2) / permissionBytes.byteLength) + (permissionBytes.byteLength - 1)] += (val << ((index * 2) % permissionBytes.byteLength));
+                            });
 
-                        // TODO: Follow same algorithm in 'credentials.Sign' module
-                        // Complication: JS does not support 64-bit integers...
-                        var mac = crypto.HmacSHA256(permissionsVector, $scope.stripeKey);
-                        var permissionEncoded = permissionsVector.toString();
-                        var macEncoded = crypto.enc.Base64.stringify(mac);
+                        console.log(permissionBytes);
+
+                        var permissionBinary = '';
+                        permissionBytes.forEach(function(byte) {
+                            permissionBinary += String.fromCharCode(byte);
+                        });
+                        var permissionEncoded = base64Encode(permissionBinary).slice(0, -1);
+
+                        var mac = crypto.HmacSHA256(permissionBinary, $scope.stripeKey);
+                        var macEncoded = crypto.enc.Base64.stringify(mac).slice(0, -1);
                         var permissionAndMac = [permissionEncoded, macEncoded];
 
                         $scope.stripeCredentials = permissionAndMac.join("_");
