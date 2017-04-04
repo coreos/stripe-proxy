@@ -22,7 +22,7 @@
         }
     </style>
 </head>
-<body ng-app="app">
+<body ng-app="app" ng-cloak>
     <div ng-controller="MainCtrl">
         <md-content>
             <md-toolbar class="md-hue-2">
@@ -57,7 +57,7 @@
                                     </md-list-item>
                                     <md-list-item ng-repeat="permission in permissions track by $index"
                                                   ng-click="null">
-                                        <p flex="70">{{ permission.name}}</p>
+                                        <p flex="70">{{ permission.name }}</p>
                                         <md-checkbox ng-model="permission.read"
                                                      ng-change="updatePermissions(permission, 'read')"
                                                      type="checkbox"
@@ -91,7 +91,8 @@
                             <md-input-container flex="90">
                                 <label>Stripe Credentials</label>
                                 <textarea ng-model="stripeCredentials"
-                                          disabled></textarea>
+                                          onClick="this.select()"
+                                          readonly></textarea>
                             </md-input-container>
                         </md-content>
                     </md-card>
@@ -146,11 +147,7 @@
                         if (permission.name == 'ResourceAll') {
                             $scope.setAll(permissionType, permission[permissionType])
                         }
-
-                        if ($scope.stripeKey.length > 0) {
-                            $scope.stripeCredentials = "";
-                            $scope.generate();
-                        }
+                        $scope.generate();
                     };
 
                     $scope.setAll = function(permissionType, value) {
@@ -160,32 +157,39 @@
                     };
 
                     $scope.generate = function() {
-                        var permissionBytes = new Uint8Array(8);
+                        if ($scope.stripeKey != undefined && $scope.stripeKey.length > 0) {
+                            $scope.stripeCredentials = "";
+                            var permissionBytes = new Uint8Array(8);
 
-                        $scope.permissions
-                            .map(function(permission, index) {
-                                // Ignore permission value if ResourceAll is set
-                                return (!(index > 0 && $scope.permissions[0].read) && permission.read ? 1 : 0) +
-                                       (!(index > 0 && $scope.permissions[0].write) && permission.write ? 2 : 0);
-                            })
-                            .forEach(function(val, index) {
-                                permissionBytes[Math.floor((index * 2) / permissionBytes.byteLength) + (permissionBytes.byteLength - 1)] += (val << ((index * 2) % permissionBytes.byteLength));
-                            });
+                            $scope.permissions
+                                .map(function(permission, index) {
+                                    // Ignore permission value if ResourceAll is set
+                                    return (!(index > 0 && $scope.permissions[0].read) && permission.read ? 1 : 0) +
+                                           (!(index > 0 && $scope.permissions[0].write) && permission.write ? 2 : 0);
+                                })
+                                .forEach(function(val, index) {
+                                    var byteVal = val << Math.floor((index * 2) % (permissionBytes.BYTES_PER_ELEMENT * 8));
+                                    var byteArrayIndex = Math.floor((index * 2) / (permissionBytes.BYTES_PER_ELEMENT * 8));
+                                    
+                                    permissionBytes[byteArrayIndex] += byteVal;
+                                });
 
-                        if (permissionBytes.filter(function(byte) { return byte > 0; }) > 0) {
-                            // Convert byte array to ascii string
-                            var permissionBinary = '';
-                            permissionBytes.forEach(function(byte) {
-                                permissionBinary += String.fromCharCode(byte);
-                            });
+                            if (permissionBytes.filter(function(byte) { return byte > 0; }).length > 0) {
+                                // Convert byte array to ASCII string
+                                var permissionBinary = '';
+                                permissionBytes.forEach(function(byte) {
+                                    permissionBinary += String.fromCharCode(byte);
+                                });
+                                permissionBinary = permissionBinary.split('').reverse().join('');
 
-                            var mac = crypto.HmacSHA256(permissionBinary, $scope.stripeKey);
+                                var mac = crypto.HmacSHA256(permissionBinary, $scope.stripeKey);
 
-                            var permissionEncoded = base64Encode(permissionBinary).slice(0, -1);
-                            var macEncoded = crypto.enc.Base64.stringify(mac).slice(0, -1);
-                            var permissionAndMac = [permissionEncoded, macEncoded];
+                                var permissionEncoded = base64Encode(permissionBinary).slice(0, -1);
+                                var macEncoded = crypto.enc.Base64.stringify(mac).slice(0, -1);
+                                var permissionAndMac = [permissionEncoded, macEncoded];
 
-                            $scope.stripeCredentials = permissionAndMac.join("_");
+                                $scope.stripeCredentials = permissionAndMac.join("_");
+                            }
                         }
                     };
                 }]);
