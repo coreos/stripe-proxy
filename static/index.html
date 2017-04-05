@@ -34,13 +34,15 @@
                     <div layout="row">
                         <md-card flex>
                             <md-card-content>
-                                <md-input-container>
-                                    <label>Stripe Private Key:</label>
-                                    <input ng-model="stripeKey"
-                                           ng-change="generate()"
-                                           type="password"
-                                           required>
-                                </md-input-container>
+                                <div layout="row">
+                                    <md-input-container flex="80">
+                                        <label>Stripe Private Key:</label>
+                                        <input ng-model="stripeKey"
+                                               ng-change="generate()"
+                                               type="password"
+                                               required>
+                                    </md-input-container>
+                                </div>
 
                                 <div layout="row" layout-align="end">
                                     <md-button class="md-secondary"
