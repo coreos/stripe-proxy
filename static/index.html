@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Generate Signed Stripe Credentials</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- External Libraries-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9/crypto-js.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9/hmac-sha256.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9/enc-base64.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-animate.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-aria.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-messages.min.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/angular_material/1.1.0/angular-material.min.js"></script>
+    <link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/angular_material/1.1.0/angular-material.min.css">
+
+    <!-- Custom styles -->
+    <style>
+        .header-row {
+            color: rgba(0,0,0,0.54);
+        }
+    </style>
+</head>
+<body ng-app="app" ng-cloak>
+    <div ng-controller="MainCtrl">
+        <md-content>
+            <md-toolbar class="md-hue-2">
+                <h2 class="md-toolbar-tools"><span>Stripe Permissions Token Generator</span></h2>
+            </md-toolbar>
+
+            <div layout="row">
+                <div flex="50">
+                    <div layout="row">
+                        <md-card flex>
+                            <md-card-content>
+                                <div layout="row">
+                                    <md-input-container flex="80">
+                                        <label>Stripe Private Key:</label>
+                                        <input ng-model="stripeKey"
+                                               ng-change="generate()"
+                                               type="password"
+                                               required>
+                                    </md-input-container>
+                                </div>
+
+                                <div layout="row" layout-align="end">
+                                    <md-button class="md-secondary"
+                                               ng-click="setAll('read', false); setAll('write', false); stripeCredentials = ''">
+                                        Reset All
+                                    </md-button>
+                                </div>
+
+                                <md-list>
+                                    <md-list-item class="header-row">
+                                        <b flex="60">Resource Name</b>
+                                        <b flex="20">Read</b>
+                                        <b flex="20">Write</b>
+                                    </md-list-item>
+                                    <md-list-item ng-repeat="permission in permissions track by $index"
+                                                  ng-click="null">
+                                        <p flex="70">{{ permission.name }}</p>
+                                        <md-checkbox ng-model="permission.read"
+                                                     ng-change="updatePermissions(permission, 'read')"
+                                                     type="checkbox"
+                                                     aria-label="read"
+                                                     class="md-primary"
+                                                     flex="15"
+                                                     ng-disabled="$index > 0 && permissions[0].read"></md-checkbox>
+                                        <md-checkbox ng-model="permission.write"
+                                                     ng-change="updatePermissions(permission, 'write')"
+                                                     type="checkbox"
+                                                     aria-label="write"
+                                                     class="md-primary"
+                                                     flex="15"
+                                                     ng-disabled="$index > 0 && permissions[0].write"></md-checkbox>
+                                    </md-list-item>
+                                </md-list>
+                            </md-card-content>
+                        </md-card>
+
+                    </div>
+                </div>
+                <div flex="50">
+                    <md-card>
+                        <md-card-title>
+                            <md-card-title-text>
+                                <span class="md-headline">Stripe Credentials</span>
+                                <span class="md-subhead">Please copy and paste the below credentials to your Stripe client</span>
+                            </md-card-title-text>
+                        </md-card-title>
+                        <md-content layout="row" flex-offset="5">
+                            <md-input-container flex="90">
+                                <label>Stripe Credentials</label>
+                                <textarea ng-model="stripeCredentials"
+                                          onClick="this.select()"
+                                          readonly></textarea>
+                            </md-input-container>
+                        </md-content>
+                    </md-card>
+                </div>
+            </div>
+        </md-content>
+    </div>
+    <script>
+        (function() {
+            angular
+                .module("app", ['ngMaterial'])
+                .constant('Crypto', CryptoJS)
+                .constant('base64Encode', btoa)
+                .controller("MainCtrl", ['$scope', 'Crypto', 'base64Encode', function($scope, crypto, base64Encode) {
+                    $scope.stripeCredentials = "";
+                    $scope.stripeKey = "";
+                    $scope.permissions = [
+                        {name: 'ResourceAll',                  read: false, write: false},
+                        {name: 'ResourceBalance',              read: false, write: false},
+                        {name: 'ResourceCharges',              read: false, write: false},
+                        {name: 'ResourceCustomers',            read: false, write: false},
+                        {name: 'ResourceDisputes',             read: false, write: false},
+                        {name: 'ResourceEvents',               read: false, write: false},
+                        {name: 'ResourceFileUploads',          read: false, write: false},
+                        {name: 'ResourceRefunds',              read: false, write: false},
+                        {name: 'ResourceTokens',               read: false, write: false},
+                        {name: 'ResourceFileUploads',          read: false, write: false},
+                        {name: 'ResourceTransfers',            read: false, write: false},
+                        {name: 'ResourceTransferReversals',    read: false, write: false},
+                        {name: 'ResourceAccount',              read: false, write: false},
+                        {name: 'ResourceApplicationFeeRefund', read: false, write: false},
+                        {name: 'ResourceApplicationFee',       read: false, write: false},
+                        {name: 'ResourceRecipient',            read: false, write: false},
+                        {name: 'ResourceCountrySpec',          read: false, write: false},
+                        {name: 'ResourceExternalAccount',      read: false, write: false},
+                        {name: 'ResourceSource',               read: false, write: false},
+                        {name: 'ResourceOrder',                read: false, write: false},
+                        {name: 'ResourceOrderReturn',          read: false, write: false},
+                        {name: 'ResourceProduct',              read: false, write: false},
+                        {name: 'ResourceSKU',                  read: false, write: false},
+                        {name: 'ResourceCoupon',               read: false, write: false},
+                        {name: 'ResourceInvoice',              read: false, write: false},
+                        {name: 'ResourceInvoiceItem',          read: false, write: false},
+                        {name: 'ResourcePlan',                 read: false, write: false},
+                        {name: 'ResourceSubscription',         read: false, write: false},
+                        {name: 'ResourceSubscriptionItem',     read: false, write: false},
+                        {name: 'ResourceRadarReview',          read: false, write: false},
+                        {name: 'ResourceRadarRule',            read: false, write: false},
+                    ];
+
+                    $scope.updatePermissions = function(permission, permissionType) {
+                        if (permission.name == 'ResourceAll') {
+                            $scope.setAll(permissionType, permission[permissionType])
+                        }
+                        $scope.generate();
+                    };
+
+                    $scope.setAll = function(permissionType, value) {
+                        $scope.permissions.forEach(function(permission) {
+                            permission[permissionType] = value;
+                        });
+                    };
+
+                    $scope.generate = function() {
+                        if ($scope.stripeKey != undefined && $scope.stripeKey.length > 0) {
+                            $scope.stripeCredentials = "";
+                            var permissionBytes = new Uint8Array(8);
+
+                            $scope.permissions
+                                .map(function(permission, index) {
+                                    // Ignore permission value if ResourceAll is set
+                                    return (!(index > 0 && $scope.permissions[0].read) && permission.read ? 1 : 0) +
+                                           (!(index > 0 && $scope.permissions[0].write) && permission.write ? 2 : 0);
+                                })
+                                .forEach(function(val, index) {
+                                    var byteVal = val << Math.floor((index * 2) % (permissionBytes.BYTES_PER_ELEMENT * 8));
+                                    var byteArrayIndex = Math.floor((index * 2) / (permissionBytes.BYTES_PER_ELEMENT * 8));
+                                    
+                                    permissionBytes[byteArrayIndex] += byteVal;
+                                });
+
+                            if (permissionBytes.filter(function(byte) { return byte > 0; }).length > 0) {
+                                // Convert byte array to ASCII string
+                                var permissionBinary = '';
+                                permissionBytes.forEach(function(byte) {
+                                    permissionBinary += String.fromCharCode(byte);
+                                });
+                                permissionBinary = permissionBinary.split('').reverse().join('');
+
+                                var mac = crypto.HmacSHA256(permissionBinary, $scope.stripeKey);
+
+                                var permissionEncoded = base64Encode(permissionBinary).slice(0, -1);
+                                var macEncoded = crypto.enc.Base64.stringify(mac).slice(0, -1);
+                                var permissionAndMac = [permissionEncoded, macEncoded];
+
+                                $scope.stripeCredentials = permissionAndMac.join("_");
+                            }
+                        }
+                    };
+                }]);
+        })();
+    </script>
+</body>
+</html>

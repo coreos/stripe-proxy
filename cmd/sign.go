@@ -43,7 +43,7 @@ var signCmd = &cobra.Command{
 		}
 		log.Infof("Credentials:")
 		fmt.Printf("%s\n", signed)
-		log.Infof("Please copy and past the above credentials to your Stripe client")
+		log.Infof("Please copy and paste the above credentials to your Stripe client")
 	},
 }
 

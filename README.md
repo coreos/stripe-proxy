@@ -4,7 +4,17 @@ A proxy for Stripe which allows the administrator to grant permission-restrictin
 
 ## Usage
 
-There are two subcommands which can be used to interact with stripe-proxy. The `sign` command, which generates signed restricted credentials, and the `serve` command which runs the HTTP reverse proxy. All commands require the use of a stripe key with the `--key` parameter.
+There are two subcommands which can be used to interact with stripe-proxy. The `sign` command, which generates signed restricted credentials, and the `serve` command which runs the HTTP reverse proxy. All commands require the use of a stripe key with the `--key` parameter. Alternatively, the `generate` command will run web browser-accessible user interface for securely generating signed credentials.
+
+### Generate
+
+To start the client user interface webserver, use a command like the following:
+
+```
+stripe-proxy --port <custom_port> generate
+```
+
+The default port is `9090`. Point your web browser of choice at the root address (ex. `localhost:9090/`) and you will see the user interface.
 
 ### Serve
 
